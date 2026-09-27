@@ -180,8 +180,8 @@ Deno.test("started: the file, its size, and what the song is", () => {
       audio_channels: 2,
     }),
     {
+      // Only an estimate: no size at all, never a wrong one.
       path: "/songs/k.webm",
-      size: 3481234,
       durationMs: 212000,
       title: "Never Gonna Give You Up",
       artist: "Rick Astley",

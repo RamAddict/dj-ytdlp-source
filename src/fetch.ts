@@ -41,10 +41,10 @@ export function startedFrom(path: string, info: Json): Started {
   const youtube = siteOfEntry(info) === "youtube" && id?.length === 11;
   return compact({
     path,
-    // `filesize` when the site says, else yt-dlp's estimate from bitrate and
-    // length. The player only uses it to tell a slow download from the end
-    // of the file, and `done` settles it either way.
-    size: positiveInt(info["filesize"]) ?? positiveInt(info["filesize_approx"]),
+    // Exact or absent: the player takes it as the file's total length while
+    // it grows, so an estimate (`filesize_approx`) that falls short would
+    // cut the song off. SoundCloud's estimate was 490 bytes short in a test.
+    size: positiveInt(info["filesize"]),
     durationMs: durationMs(info["duration"]),
     title: str(info["track"]) ?? str(info["title"]),
     artist: artistOf(info),
@@ -69,7 +69,7 @@ export async function fetchSong(
   if (!isFetchable(request.source, request.trusted)) {
     throw new YtDlpError("That link can't be played");
   }
-  let announced = false;
+  let announced: string | undefined;
   const result = await download(tools, request.source, {
     directory: request.directory,
     name: request.name,
@@ -78,13 +78,22 @@ export async function fetchSong(
     knownSitesOnly: !request.trusted,
     deadline: Date.now() + fetchTimeoutMs,
     onStarted: ({ path, info }) => {
-      announced = true;
+      announced = path;
       const started = startedFrom(path, info);
       log(`yt-dlp: downloading ${started.audio}`);
       emit({ started });
     },
   });
   // A file already there from before is reported without a before_dl line.
-  if (!announced) emit({ started: startedFrom(result.path, result.info) });
+  if (announced === undefined) {
+    emit({ started: startedFrom(result.path, result.info) });
+  } else if (result.path !== announced) {
+    // A retry chose another format, so another file. The booth is reading
+    // the one `started` named: that download failed.
+    await Deno.remove(result.path).catch(() => {});
+    throw new YtDlpError(
+      "The download came back in another format than it started in",
+    );
+  }
   emit({ done: { path: result.path } });
 }

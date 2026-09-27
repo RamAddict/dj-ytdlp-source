@@ -33,6 +33,7 @@ case "$FAKE_MODE" in
   failonce) start; : > "$file"; if [ $runs -eq 1 ]; then echo "ERROR: HTTP Error 403: Forbidden" >&2; exit 1; fi; printf 'audio' > "$file"; done_;;
   failwritten) start; printf 'au' > "$file"; echo "ERROR: [youtube] x: connection reset" >&2; exit 1;;
   failtwice) start; : > "$file"; echo "ERROR: HTTP Error 403: Forbidden" >&2; exit 1;;
+  otherformat) if [ $runs -eq 2 ]; then file=$(echo "$out" | sed 's/%(ext)s/m4a/'); fi; start; : > "$file"; if [ $runs -eq 1 ]; then echo "ERROR: HTTP Error 403: Forbidden" >&2; exit 1; fi; printf 'audio' > "$file"; done_;;
   hang) start; echo $$ > "$FAKE_LOG.pid"; exec sleep 60;;
 esac
 `;
@@ -302,6 +303,37 @@ t("fetch: two refusals are an error", async () => {
   equal(ytDlpRuns(env).length, 2);
   eq(answers.at(-1), { error: "HTTP Error 403: Forbidden" });
 });
+
+t(
+  "fetch: a retry in another format is an error, not done with another file",
+  async () => {
+    const env = setUp();
+    const { code, answers } = await run(env, "otherformat", "fetch", {
+      protocol: 1,
+      source: "https://soundcloud.com/a/b",
+      directory: env.songs,
+      name: "k",
+      trusted: true,
+    });
+    equal(code, 1);
+    equal(ytDlpRuns(env).length, 2);
+    eq(answers, [
+      {
+        started: {
+          path: `${env.songs}/k.webm`,
+          size: 5,
+          durationMs: 3000,
+          title: "Song",
+          artist: "Artist",
+          audio: "opus, 130 kbps (format 251)",
+        },
+      },
+      { error: "The download came back in another format than it started in" },
+    ]);
+    // The stray file is not left behind.
+    eq([...Deno.readDirSync(env.songs)].map((e) => e.name), []);
+  },
+);
 
 t("bad invocations answer with an error line", async () => {
   const env = setUp();

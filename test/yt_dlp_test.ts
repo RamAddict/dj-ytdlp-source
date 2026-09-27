@@ -137,7 +137,7 @@ Deno.test("fetch writes in place and reports the file before the first byte", ()
   const prints = args.flatMap((a, i) => (args[i - 1] === "--print" ? [a] : []));
   ok(
     prints[0].startsWith(
-      `before_dl:${startMark}%(.{filename,filesize,filesize_approx,`,
+      `before_dl:${startMark}%(.{filename,filesize,title,`,
     ),
   );
   ok(prints[1].startsWith(`after_move:${doneMark}%(.{filepath,`));

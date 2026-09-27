@@ -194,7 +194,7 @@ export function fetchArgs(
     `${directory.replaceAll("%", "%%")}${separator}` +
     `${options.name.replaceAll("%", "%%")}.%(ext)s`,
     "--print",
-    `before_dl:${startMark}%(.{filename,filesize,filesize_approx,${fields}})j`,
+    `before_dl:${startMark}%(.{filename,filesize,${fields}})j`,
     "--print",
     `after_move:${doneMark}%(.{filepath,${fields}})j`,
     "--",
