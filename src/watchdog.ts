@@ -1,12 +1,14 @@
 // Ends yt-dlp when the extension process is gone without saying so.
 //
-// The app kills a request that runs over its time. On Windows that ends only
-// the extension's own process, never its children; on Linux a SIGKILL can't
-// be caught. Either way yt-dlp would go on downloading for nobody. So each
+// The app kills a request that runs over its time, and on Linux a SIGKILL
+// can't be caught: yt-dlp would go on downloading for nobody. So each
 // yt-dlp gets this small guard: a separate process whose stdin is a pipe
 // from the extension. The extension writes one byte to it once yt-dlp has
 // ended normally. If the pipe closes without that byte, the extension died
 // first, and the guard ends yt-dlp and everything it started.
+//
+// Linux only: on Windows the app runs the extension in a job object and ends
+// the whole job, and Deno takes its children (this guard too) down with it.
 //
 // Usage: deno run --allow-run --no-prompt watchdog.ts <yt-dlp pid>
 

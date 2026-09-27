@@ -124,7 +124,12 @@ export function spawnTracked(
     stderr: "piped",
   }).spawn();
   children.add(child);
-  const release = guarded ? guard(child) : () => {};
+  // On Windows the app starts us in a job object and ends the whole job,
+  // yt-dlp's Python child included; a guard would go down with us there
+  // (Deno ends its children when it exits) and never get to act.
+  const release = guarded && Deno.build.os !== "windows"
+    ? guard(child)
+    : () => {};
   child.status.finally(() => {
     children.delete(child);
     release();

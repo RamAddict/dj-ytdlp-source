@@ -76,10 +76,11 @@ request and reads JSON lines from its stdout.
   Plain links and `ytsearch1:` queries queued by older Roscord versions work
   too.
 
-A killed request takes yt-dlp with it: on Linux the extension passes the
-app's SIGTERM on, and for anything it can't catch (a kill on Windows, where
-only the extension's own process is ended, or SIGKILL) each yt-dlp has a
-small guard process that ends it once the extension is gone.
+A killed request takes yt-dlp with it. On Windows the app runs the extension
+in a job object and ends the whole job, yt-dlp's Python child included. On
+Linux the extension passes the app's SIGTERM on, and for a SIGKILL, which it
+can't catch, each yt-dlp has a small guard process that ends it once the
+extension is gone.
 
 Deno runs the extension with `--allow-run --allow-read --allow-write` and
 network access to Spotify's hosts only. yt-dlp, as a program it starts, is

@@ -47,7 +47,12 @@ export async function updateInBackground(
       stdin: "null",
       stdout: "null",
       stderr: "null",
-      detached: true,
+      // On Windows a detached child has no console, so yt-dlp's launcher
+      // hands its Python child a fresh one: a Terminal window pops up. A
+      // plain child shares ours, which the app started without a window,
+      // and outlives us anyway: Windows doesn't end children with their
+      // parent. On Linux detaching keeps it out of our process group.
+      detached: Deno.build.os !== "windows",
     }).spawn();
     child.unref();
     log(`yt-dlp: checking for an update in the background (pid ${child.pid})`);
