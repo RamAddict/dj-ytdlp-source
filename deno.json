@@ -1,0 +1,18 @@
+{
+  "tasks": {
+    "test": "deno test --allow-run --allow-read --allow-write --allow-env",
+    "check": "deno check main.ts src/ test/ scripts/",
+    "lint": "deno lint",
+    "fmt": "deno fmt",
+    "fmt:check": "deno fmt --check",
+    "package": "deno run --allow-read --allow-write --allow-env=RELEASE_TAG scripts/package.ts",
+    "ci": "deno fmt --check && deno lint && deno check main.ts src/ test/ scripts/ && deno test --allow-run --allow-read --allow-write --allow-env"
+  },
+  "exclude": ["dist/"],
+  "fmt": {
+    "proseWrap": "preserve"
+  },
+  "lint": {
+    "rules": { "tags": ["recommended"] }
+  }
+}

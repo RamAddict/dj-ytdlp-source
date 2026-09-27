@@ -1,0 +1,73 @@
+{
+  "protocol": 1,
+  "id": "dev.djsource.ytdlp",
+  "name": "yt-dlp music",
+  "version": "1.0.0",
+  "description": "Plays YouTube, SoundCloud and Spotify links (and other sites yt-dlp knows) in the DJ booth, using yt-dlp.",
+  "hosts": [
+    "youtube.com",
+    "youtu.be",
+    "music.youtube.com",
+    "youtube-nocookie.com",
+    "soundcloud.com",
+    "on.soundcloud.com",
+    "open.spotify.com",
+    "spotify.link",
+    "spotify.app.link",
+    "*"
+  ],
+  "hint": "Paste a YouTube, SoundCloud or Spotify link",
+  "downloads": [
+    {
+      "id": "deno",
+      "name": "Deno",
+      "size": "45 MB",
+      "files": {
+        "windows-x64": {
+          "url": "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip",
+          "unzip": "deno.exe"
+        },
+        "linux-x64": {
+          "url": "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip",
+          "unzip": "deno"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/denoland/deno/releases/latest/download/deno-aarch64-unknown-linux-gnu.zip",
+          "unzip": "deno"
+        }
+      }
+    },
+    {
+      "id": "yt-dlp",
+      "name": "yt-dlp",
+      "size": "40 MB",
+      "files": {
+        "windows-x64": {
+          "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+        },
+        "linux-x64": {
+          "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64"
+        }
+      }
+    }
+  ],
+  "run": {
+    "command": "{dep:deno}",
+    "args": [
+      "run",
+      "--quiet",
+      "--no-prompt",
+      "--no-config",
+      "--allow-run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-net=open.spotify.com,spotify.link,spotify.app.link",
+      "{dir}/main.ts",
+      "--yt-dlp",
+      "{dep:yt-dlp}"
+    ]
+  }
+}

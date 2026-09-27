@@ -1,0 +1,62 @@
+name: release
+
+# Push a tag named after the manifest's version (v1.0.0 for "1.0.0") to test,
+# package and publish the extension as a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno fmt --check
+      - run: deno lint
+      - run: deno task check
+      - run: deno task test
+
+  test-windows:
+    # Everything but the end-to-end tests, which fake yt-dlp with a shell
+    # script and skip themselves here.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno task test
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, test-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: deno task package
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          zip="dist/yt-dlp-music-${TAG#v}.zip"
+          sha256sum "$zip" | tee "$zip.sha256"
+          gh release create "$TAG" "$zip" "$zip.sha256" \
+            --title "yt-dlp music ${TAG#v}" \
+            --notes "Install in the DJ booth from this file, or paste the link to the .zip."
