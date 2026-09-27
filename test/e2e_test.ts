@@ -3,9 +3,11 @@
 // fake is a shell script.
 import { deepStrictEqual as eq, equal, ok } from "node:assert/strict";
 
+// A path only on Linux, where these run; the manifest is read by URL, as
+// this module loads everywhere.
 const root = new URL("../", import.meta.url).pathname;
 const manifest = JSON.parse(
-  Deno.readTextFileSync(`${root}/roscord-extension.json`),
+  Deno.readTextFileSync(new URL("../roscord-extension.json", import.meta.url)),
 );
 const linux = Deno.build.os === "linux";
 
