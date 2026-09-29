@@ -1,4 +1,4 @@
-// Builds dist/yt-dlp-music-<version>.zip: the manifest at the root, next to
+// Builds dist/yt-dlp-source.zip: the manifest at the root, next to
 // main.ts, src/ and the license. No dependencies: a small zip writer on
 // Deno's built-in deflate. Timestamps are fixed so the same sources give the
 // same zip.
@@ -108,22 +108,26 @@ if (import.meta.main) {
   const manifest = JSON.parse(
     await Deno.readTextFile(new URL("roscord-extension.json", root)),
   );
-  const version = manifest.version;
-  if (typeof version !== "string" || !/^[0-9A-Za-z.+-]+$/.test(version)) {
-    throw new Error(`Bad version in the manifest: ${version}`);
-  }
+  // CI picks the release's version (see .github/workflows/ci.yml) and it
+  // replaces the manifest's in the zip. Without one, the manifest's stands.
   const tag = Deno.env.get("RELEASE_TAG");
-  if (tag !== undefined && tag.replace(/^v/, "") !== version) {
-    throw new Error(
-      `Tag ${tag} doesn't match the manifest's version ${version}`,
-    );
+  const version = tag === undefined ? manifest.version : tag.replace(/^v/, "");
+  if (typeof version !== "string" || !/^[0-9A-Za-z.+-]+$/.test(version)) {
+    throw new Error(`Bad version: ${version}`);
   }
+  manifest.version = version;
   const entries = [];
   for (const name of await files()) {
-    entries.push({ name, data: await Deno.readFile(new URL(name, root)) });
+    const data = name === "roscord-extension.json"
+      ? new TextEncoder().encode(JSON.stringify(manifest, null, 2) + "\n")
+      : await Deno.readFile(new URL(name, root));
+    entries.push({ name, data });
   }
   await Deno.mkdir(new URL("dist/", root), { recursive: true });
-  const out = new URL(`dist/yt-dlp-music-${version}.zip`, root);
+  // No version in the name, so .../releases/latest/download/yt-dlp-source.zip
+  // always gets the newest, and installing again from that link updates it.
+  // Not `yt-dlp.zip`, which would pass for one of yt-dlp's own.
+  const out = new URL("dist/yt-dlp-source.zip", root);
   await Deno.writeFile(out, await zip(entries));
   console.log(`${out.pathname} (${entries.map((e) => e.name).join(", ")})`);
 }

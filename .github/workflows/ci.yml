@@ -1,0 +1,146 @@
+name: ci
+
+# Pull requests: tests and a package build. Every push to main: the same, then
+# a release named after the next version, which the tests and the package
+# wait for. The version comes from the conventional commits since the last
+# vX.Y.Z tag (feat: minor, a ! or BREAKING CHANGE: major, anything else
+# patch), or the manifest's version when that is higher, so raising it in
+# roscord-extension.json picks the next release's version by hand.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump. auto reads conventional commits since the last tag.
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+
+# Queue runs instead of overlapping them so two pushes never pick the same version.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || 'release' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno fmt --check
+      - run: deno lint
+      - run: deno task check
+      - run: deno task test
+
+  test-windows:
+    # Everything but the end-to-end tests, which fake yt-dlp with a shell
+    # script and skip themselves here.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno task test
+
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compute next version
+        id: next
+        env:
+          BUMP: ${{ inputs.bump || 'auto' }}
+        run: |
+          set -euo pipefail
+          manifest=$(jq -r .version roscord-extension.json)
+          # Latest plain vX.Y.Z tag. Prerelease and hotfix tags are ignored.
+          last=$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
+          if [ -z "$last" ]; then
+            version="v$manifest"
+            echo "No release yet. Next: $version (the manifest's)"
+          else
+            commits=$(git log --format='%s%n%b' "$last..HEAD")
+            bump=$BUMP
+            if [ "$bump" = auto ]; then
+              if grep -qE '^[a-z]+(\([^)]*\))?!:|^BREAKING[ -]CHANGE:' <<< "$commits"; then
+                bump="major"
+              elif grep -qE '^feat(\([^)]*\))?:' <<< "$commits"; then
+                bump="minor"
+              else
+                bump="patch"
+              fi
+            fi
+            IFS=. read -r major minor patch <<< "${last#v}"
+            case "$bump" in
+              major) major=$((major + 1)); minor=0; patch=0 ;;
+              minor) minor=$((minor + 1)); patch=0 ;;
+              patch) patch=$((patch + 1)) ;;
+            esac
+            version="v$major.$minor.$patch"
+            # The manifest's version wins when it is ahead.
+            if [ "$(printf '%s\n%s\n' "${version#v}" "$manifest" | sort -V | tail -n1)" != "${version#v}" ]; then
+              version="v$manifest"
+            fi
+            echo "Last release: $last. Bump: $bump. Manifest: $manifest. Next: $version"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: [version]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Package
+        env:
+          RELEASE_TAG: ${{ needs.version.outputs.version }}
+        run: |
+          deno task package
+          cd dist
+          sha256sum yt-dlp-source.zip | tee yt-dlp-source.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yt-dlp-source
+          path: dist/yt-dlp-source.zip*
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: [test, test-windows, version, package]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: yt-dlp-source
+          path: dist
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          notes="Install in Cockhouse's extensions (DJ booth or soundboard) from this file, or paste
+          https://github.com/$GITHUB_REPOSITORY/releases/latest/download/yt-dlp-source.zip
+          to always get the newest. Installing again from that link updates it."
+          gh release create "$VERSION" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "yt-dlp source ${VERSION#v}" \
+            --notes "$notes" \
+            --generate-notes

@@ -21,8 +21,9 @@ where you are allowed to. The software comes with no warranty (see
 
 Extensions run on desktop Roscord (Linux x64/arm64, Windows x64).
 
-1. Get `yt-dlp-music-<version>.zip` from this project's releases, or copy the
-   link to it.
+1. Get `yt-dlp-source.zip` from this project's releases, or copy the link
+   that always points to the newest:
+   `https://github.com/RamAddict/dj-ytdlp-source/releases/latest/download/yt-dlp-source.zip`.
 2. In Roscord, open the DJ booth's extensions (in the booth, or in
    Settings), choose to install an extension, and pick the file or paste the
    link.
@@ -30,7 +31,7 @@ Extensions run on desktop Roscord (Linux x64/arm64, Windows x64).
    run the extension, about 45 MB) and yt-dlp (about 18 MB on Windows,
    40 MB on Linux), both from their official GitHub releases.
 
-To update, install it again from the same file or link.
+To update, install it again from that link (or from a newer file).
 
 Then paste a link in the booth's add bar:
 
@@ -106,7 +107,7 @@ deno task test        # unit tests, and end-to-end tests with a fake yt-dlp (Lin
 deno task check       # type check
 deno lint
 deno fmt --check
-deno task package     # dist/yt-dlp-music-<version>.zip
+deno task package     # dist/yt-dlp-source.zip
 ```
 
 With Docker instead of a local Deno:
@@ -127,9 +128,13 @@ deno run --no-prompt --allow-run --allow-read --allow-write --allow-net \
   '{"protocol": 1, "url": "https://soundcloud.com/forss/flickermood"}'
 ```
 
-To release, set `version` in `roscord-extension.json`, commit, and push a
-tag `v<version>`. The workflow in `.github/workflows/release.yml` tests,
-packages and attaches the zip (and its SHA-256) to a GitHub release.
+Every push to `main` releases. `.github/workflows/ci.yml` tests (Linux and
+Windows), packages, and publishes the zip (and its SHA-256) as a GitHub
+release. The version comes from the conventional commits since the last
+`vX.Y.Z` tag (`feat:` minor, `!` or `BREAKING CHANGE:` major, anything else
+patch), or from `version` in `roscord-extension.json` when that is higher.
+The zip's manifest carries the released version. Pull requests run the
+tests and the package without releasing.
 
 ## Layout
 
