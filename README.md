@@ -76,7 +76,8 @@ request and reads JSON lines from its stdout.
   answers `{"started": …}` as soon as yt-dlp names the file (so the booth
   plays it while it downloads) and `{"done": …}` once it is complete. A
   refused download is tried once more, unless some of it was already
-  written. Sources from another DJ's queue (`"trusted": false`) never use
+  written. A YouTube video dubbed in other languages plays its original
+  audio track, whatever language that is. Sources from another DJ's queue (`"trusted": false`) never use
   yt-dlp's generic extractor, which would fetch any web page.
 - Sources are canonical YouTube/SoundCloud links and `ytsearch1:` queries.
   Plain links and `ytsearch1:` queries queued by older Roscord versions work

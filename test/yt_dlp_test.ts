@@ -132,7 +132,7 @@ Deno.test("fetch writes in place and reports the file before the first byte", ()
   }
   equal(args[args.indexOf("--fixup") + 1], "never");
   equal(args[args.indexOf("-f") + 1], formatSelector);
-  equal(args[args.indexOf("--format-sort") + 1], "abr,asr");
+  equal(args[args.indexOf("--format-sort") + 1], "lang,abr,asr");
   equal(args[args.indexOf("-o") + 1], "/cache/dj-songs/3f2a9c.%(ext)s");
   const prints = args.flatMap((a, i) => (args[i - 1] === "--print" ? [a] : []));
   ok(

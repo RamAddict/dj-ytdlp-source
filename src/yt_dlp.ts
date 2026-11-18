@@ -186,9 +186,12 @@ export function fetchArgs(
     // Within whichever alternative of formatSelector matches, the
     // loudest-in-bits one. yt-dlp's own order weighs `quality`, `channels`
     // and codec before the bitrate, so a site offering the same codec twice
-    // could otherwise hand us the smaller file.
+    // could otherwise hand us the smaller file. Before both, the language:
+    // a YouTube video dubbed in other languages offers each as an audio
+    // track at the same bitrates, and yt-dlp ranks the original one first
+    // in `lang` (whichever language it is), then the default one.
     "--format-sort",
-    "abr,asr",
+    "lang,abr,asr",
     "-o",
     // `%` is template syntax in yt-dlp's output name.
     `${directory.replaceAll("%", "%%")}${separator}` +
