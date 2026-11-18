@@ -33,6 +33,11 @@ Extensions run on desktop Roscord (Linux x64/arm64, Windows x64).
 
 To update, install it again from that link (or from a newer file).
 
+It also serves the soundboard: in a Space's settings, "Add sound" with a
+YouTube (or any other) link takes the first video the link holds into the
+trim editor. Only the admin adding the sound needs the extension; everyone
+else plays the stored clip.
+
 Then paste a link in the booth's add bar:
 
 | Link                                                 | Queued as                                  |

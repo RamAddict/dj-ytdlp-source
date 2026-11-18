@@ -3,7 +3,7 @@
   "id": "dev.djsource.ytdlp",
   "name": "yt-dlp music",
   "version": "1.0.0",
-  "description": "Plays YouTube, SoundCloud and Spotify links (and other sites yt-dlp knows) in the DJ booth, using yt-dlp.",
+  "description": "Plays YouTube, SoundCloud and Spotify links (and other sites yt-dlp knows) in the DJ booth and the soundboard, using yt-dlp.",
   "hosts": [
     "youtube.com",
     "youtu.be",
@@ -17,6 +17,7 @@
     "*"
   ],
   "hint": "Paste a YouTube, SoundCloud or Spotify link",
+  "uses": ["dj", "soundboard"],
   "downloads": [
     {
       "id": "deno",
